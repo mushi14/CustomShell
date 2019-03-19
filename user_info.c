@@ -15,7 +15,7 @@ void get_user() {
 }
 
 void get_hostname() {
-	char buff[HOST_BUFF];
+	char buff[BUFF];
 	int hostname;
 
 	hostname = gethostname(buff, sizeof(buff));

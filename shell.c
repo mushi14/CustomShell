@@ -5,8 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/param.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <unistd.h>
 #include <dirent.h>
@@ -26,31 +24,6 @@ bool call_cd = false;
 char short_path[PATH_MAX];
 char current_dir[PATH_MAX];
 
-int is_file(const char *path) {
-	struct stat path_stat;
-	stat(path, &path_stat);
-
-	return S_ISREG(path_stat.st_mode);
-}
-
-char *path_converter(char *path, char *name, bool slash) {
-	char *new_name = name;
-	char *temp;
-	if (slash) {
-		temp = "/";
-	} else {
-		temp = "";
-	}
-	char *new_dir = (char *) malloc(100 + strlen(path) + strlen(new_name));
-	char *a = (char *) malloc(100 + strlen(path) + strlen(temp));
-	strcpy(a, path);
-	strcat(a, temp);
-	strcpy(new_dir, a);
-	strcat(new_dir, new_name);
-
-	return new_dir;
-}
-
 void parse_home(char *line) {
 	if (strstr(line, USERNAME)) {
 		int size = strlen(line);
@@ -65,49 +38,6 @@ void parse_home(char *line) {
 	}
 }
 
-void *change_directory(char *target, bool path) {
-	char cwd[PATH_MAX];
-	memset(cwd, 0, PATH_MAX);
-	getcwd(cwd, sizeof(cwd));
-
-	DIR *dir;
-	struct dirent *sub_dir;
-	bool check = false;
-	int tracker = 1;
-
-	if (path == true) {
-		dir = opendir(target);
-		if (dir != NULL) {
-			tracker = 0;
-			chdir(target);
-			getcwd(cwd, sizeof(cwd));
-		}
-	} else {
-		dir = opendir(cwd);
-		if (dir != NULL) {
-			while ((sub_dir = readdir(dir)) != NULL) {
-				if (strcmp(sub_dir->d_name, ".") != 0 && strcmp(sub_dir->d_name, "..") != 0) {
-					char *new_dir = path_converter(cwd, sub_dir->d_name, true);
-					if (is_file(new_dir) == 0 && strcmp(sub_dir->d_name, target) == 0) {
-						check = true;
-						tracker = 0;
-						chdir(sub_dir->d_name);
-						getcwd(cwd, sizeof(cwd));
-						free(new_dir);
-						break;
-					}
-					free(new_dir);
-				}
-			}
-		}
-	}
-	closedir(dir);
-
-	if (!check && tracker > 0) {
-		printf("-cash: cd: %s: No such file or directory\n", target);
-	}
-}
-
 void traverse(char *home) {
 	DIR *dir = opendir(home);
 	struct dirent *sub_directory;
@@ -117,7 +47,7 @@ void traverse(char *home) {
 
 	if (dir != NULL) {
 		while ((sub_directory = readdir(dir)) != NULL) {
-			char *new_dir = path_converter(name, sub_directory->d_name, true);
+			char *new_dir = path_converter(name, sub_directory->d_name);
 
 			if (strcmp(sub_directory->d_name, ".") != 0 && strcmp(sub_directory->d_name, "..") != 0) {
 				if (strcmp(getcwd(current_dir, sizeof(current_dir)), new_dir) == 0) {

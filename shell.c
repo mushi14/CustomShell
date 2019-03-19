@@ -23,7 +23,7 @@
 int count = 0;
 bool found = false;
 bool call_cd = false;
-char curr_dir[100];
+char short_path[PATH_MAX];
 char current_dir[PATH_MAX];
 
 int is_file(const char *path) {
@@ -49,6 +49,20 @@ char *path_converter(char *path, char *name, bool slash) {
 	strcat(new_dir, new_name);
 
 	return new_dir;
+}
+
+void parse_home(char *line) {
+	if (strstr(line, USERNAME)) {
+		int size = strlen(line);
+		int temp = size - strlen(strstr(line, USERNAME));
+		int start = strcspn(strstr(line, USERNAME), "/") + temp;
+
+		for (int i = start; i < size; i++) {
+			int len = strlen(short_path);
+			short_path[len] = line[i];
+			short_path[len + 1] = '\0';
+		}
+	}
 }
 
 void *change_directory(char *target, bool path) {
@@ -108,8 +122,8 @@ void traverse(char *home) {
 			if (strcmp(sub_directory->d_name, ".") != 0 && strcmp(sub_directory->d_name, "..") != 0) {
 				if (strcmp(getcwd(current_dir, sizeof(current_dir)), new_dir) == 0) {
 					found = true;
-					memset(curr_dir, 0, 100);
-					strcpy(curr_dir, sub_directory->d_name);
+					memset(short_path, 0, PATH_MAX);
+					parse_home(new_dir);
 					break;
 				} else if (is_file(new_dir) == 0) {
 					traverse(new_dir);
@@ -122,14 +136,18 @@ void traverse(char *home) {
 }
 
 int print_prompt() {
+	found = false;
 	traverse(HOME);
 
 	if (found) {
-		printf("[%d %s@%s:~/%s]$ ", count, USERNAME, HOSTNAME, curr_dir);
-		found = false;
+		printf("[%d %s@%s:~%s]$ ", count, USERNAME, HOSTNAME, short_path);
 	} else {
 		getcwd(current_dir, sizeof(current_dir));
-		printf("[%d %s@%s:%s]$ ", count, USERNAME, HOSTNAME, current_dir);
+		if (strcmp(current_dir, HOME) == 0) {
+			printf("[%d %s@%s:~]$ ", count, USERNAME, HOSTNAME);
+		} else {
+			printf("[%d %s@%s:%s]$ ", count, USERNAME, HOSTNAME, current_dir);
+		}
 	}
 	fflush(stdout);
 }
@@ -154,9 +172,10 @@ int main(void) {
 		getline(&line, &line_sz, stdin);
 
 		// comment_check(line);
-		// strcpy(line, NEW_LINE);
-
-		// printf("%s\n", NEW_LINE);
+		// if (COMMENTS) {
+		// 	strcpy(line, NEW_LINE);
+		// 	strcat(line, "\n");
+		// }
 
 		if (strcmp(line, "\n") != 0) {
 			count++;
@@ -173,8 +192,10 @@ int main(void) {
 		}
 
 		bool path = false;
+		// for (int i = 0; i < sizeof(tokens) / sizeof(tokens[0]); i++) {
+		// 	printf("%s\n", tokens[i]);
+		// }
 		if (total_tokens <= 2 && strcmp("cd", tokens[0]) == 0) {
-
 			if (total_tokens > 1) {
 				if (strstr(tokens[1], "/")) {
 					path = true;
@@ -185,8 +206,8 @@ int main(void) {
 				change_directory(tokens[1], path);
 				memset(current_dir, 0, PATH_MAX);
 				getcwd(current_dir, sizeof(current_dir));
-			} else {
-				// memset(current_dir, 0, PATH_MAX);
+			} else if (total_tokens == 1) {
+				memset(current_dir, 0, PATH_MAX);
 				chdir(HOME);
 				getcwd(current_dir, sizeof(current_dir));
 			}

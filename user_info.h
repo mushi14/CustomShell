@@ -1,10 +1,10 @@
 #define _PROGRAM_NAME "whoami"
 
-#define HOST_BUFF 256
+#define BUFF 256
 
-char HOME[100];
-char USERNAME[100];
-char HOSTNAME[100];
+char HOME[BUFF];
+char USERNAME[BUFF];
+char HOSTNAME[BUFF];
 
 void get_user();
 void get_hostname();

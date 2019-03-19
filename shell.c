@@ -171,11 +171,11 @@ int main(void) {
 		size_t line_sz = 0;
 		getline(&line, &line_sz, stdin);
 
-		// comment_check(line);
-		// if (COMMENTS) {
-		// 	strcpy(line, NEW_LINE);
-		// 	strcat(line, "\n");
-		// }
+		comment_check(line);
+		if (COMMENTS) {
+			strcpy(line, NEW_LINE);
+			strcat(line, "\n");
+		}
 
 		if (strcmp(line, "\n") != 0) {
 			count++;
@@ -191,45 +191,44 @@ int main(void) {
 			total_tokens++;
 		}
 
-		bool path = false;
-		// for (int i = 0; i < sizeof(tokens) / sizeof(tokens[0]); i++) {
-		// 	printf("%s\n", tokens[i]);
-		// }
-		if (total_tokens <= 2 && strcmp("cd", tokens[0]) == 0) {
-			if (total_tokens > 1) {
-				if (strstr(tokens[1], "/")) {
-					path = true;
+		if (total_tokens != 0) {
+			if (total_tokens <= 2 && strcmp("cd", tokens[0]) == 0) {
+				bool path = false;
+				if (total_tokens > 1) {
+					if (strstr(tokens[1], "/")) {
+						path = true;
+					}
 				}
-			}
 
-			if (total_tokens == 2) {
-				change_directory(tokens[1], path);
-				memset(current_dir, 0, PATH_MAX);
-				getcwd(current_dir, sizeof(current_dir));
-			} else if (total_tokens == 1) {
-				memset(current_dir, 0, PATH_MAX);
-				chdir(HOME);
-				getcwd(current_dir, sizeof(current_dir));
-			}
-		} else if (total_tokens > 2 && strcmp("cd", tokens[0]) == 0) {
-			printf("-cash: cd: %s: No such file or directory\n", tokens[1]);
-		} else if (total_tokens != 0) {
-			tokens[i] = (char *) NULL;
-
-			pid_t pid = fork();
-			if (pid == 0) {
-				/* child */
-				int ret = execvp(tokens[0], tokens);
-				if (ret == -1) {
-					printf("-cash: %s: command not found\n", line);
+				if (total_tokens == 2) {
+					change_directory(tokens[1], path);
+					memset(current_dir, 0, PATH_MAX);
+					getcwd(current_dir, sizeof(current_dir));
+				} else if (total_tokens == 1) {
+					memset(current_dir, 0, PATH_MAX);
+					chdir(HOME);
+					getcwd(current_dir, sizeof(current_dir));
 				}
-			} else if (pid == -1) {
-				perror("fork");
+			} else if (total_tokens > 2 && strcmp("cd", tokens[0]) == 0) {
+				printf("-cash: cd: %s: No such file or directory\n", tokens[1]);
 			} else {
-				/* parent */
-				int status;
-				waitpid(pid, &status, 0);
-				LOG("Child exited. Status: %d\n", status);
+				tokens[i] = (char *) NULL;
+
+				pid_t pid = fork();
+				if (pid == 0) {
+					/* child */
+					int ret = execvp(tokens[0], tokens);
+					if (ret == -1) {
+						printf("-cash: %s: command not found\n", line);
+					}
+				} else if (pid == -1) {
+					perror("fork");
+				} else {
+					/* parent */
+					int status;
+					waitpid(pid, &status, 0);
+					LOG("Child exited. Status: %d\n", status);
+				}
 			}
 		}
 	}

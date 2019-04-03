@@ -17,8 +17,7 @@
 #include "tokenizer.h"
 #include "user_info.h"
 #include "built_in.h"
-
-#define ANSI_COLOR_RED "\x1b[31m"
+#include "pipe.h"
 
 int count = 0;
 int hist_tracker = 0;
@@ -28,7 +27,6 @@ char short_path[PATH_MAX];
 char current_dir[PATH_MAX];
 bool history_check = false;
 bool double_ex = false;
-char line_dupicate[_POSIX_ARG_MAX];
 
 void sigint_handler(int signo) {
 	printf("It worked\n");
@@ -49,42 +47,27 @@ void parse_home(char *line) {
 	}
 }
 
-void traverse(char *home) {
-	// char copy[10000];
-	// memset(copy, 0, 10000);
-	// strcpy(copy, home);
+void check_path() {
+	char full_path[PATH_MAX];
+	memset(full_path, 0, PATH_MAX);
+	strcpy(full_path, getcwd(current_dir, sizeof(current_dir)));
 
-	DIR *dir = opendir(home);
-	struct dirent *sub_directory;
-	char name[PATH_MAX];
-	memset(name, 0, PATH_MAX);
-	strcpy(name, home);
+	DIR *dir = opendir(getcwd(current_dir, sizeof(current_dir)));
 
 	if (dir != NULL) {
-		while ((sub_directory = readdir(dir)) != NULL) {
-			char new_dir[10000];
-			memset(new_dir, 0, 10000);
-			strcpy(new_dir, path_converter(name, sub_directory->d_name));
-
-			if (strcmp(sub_directory->d_name, ".") != 0 && strcmp(sub_directory->d_name, "..") != 0) {
-				if (strcmp(getcwd(current_dir, sizeof(current_dir)), new_dir) == 0) {
-					found = true;
-					memset(short_path, 0, PATH_MAX);
-					parse_home(new_dir);
-					break;
-				} else if (is_file(new_dir) == 0) {
-					traverse(new_dir);
-				}
-			}
+		if (strncmp(full_path, HOME, strlen(HOME)) == 0) {
+			found = true;
+			memset(short_path, 0, PATH_MAX);
+			parse_home(full_path);
 		}
 	}
-
 	closedir(dir);
 }
 
+
 void print_prompt() {
 	found = false;
-	traverse(HOME);
+	check_path();
 
 	if (found) {
 		printf("[%d %s@%s:~%s]$ ", count, USERNAME, HOSTNAME, short_path);
@@ -131,6 +114,23 @@ int main(void) {
 		size_t line_sz = 0;
 		int line_ptr = getline(&line, &line_sz, stdin);
 		if (line_ptr == -1) {
+			free(line);
+			break;
+		}
+
+		char *line_dupicate = line;
+		int total = 0;
+		char *ptr = line_dupicate;
+		while((ptr = strchr(ptr, ' ')) != NULL) {
+    		total++;
+
+    		if (total >= _POSIX_ARG_MAX) {
+    			break;
+    		}
+    		ptr++;
+		}
+
+		if (total >= _POSIX_ARG_MAX) {
 			break;
 		}
 
@@ -207,9 +207,21 @@ int main(void) {
 			break;
 		}
 
+		piping = false;
+		int pipe_counter = 0;
+		struct command_line cmds[100];
+		// char *command1[] = {"ls", "-1", "/", (char *) NULL};
+
+		// command1[0] = tokens[0];
+		// command1[1] = "this is mhshahid hello world";
+		// command1[3] = (char *) NULL;
+
+		// cmds[0].tokens = command1;
+		// cmds[0].stdout_pipe = false;
+		// cmds[0].stdout_file = NULL;
+
 		memset(new_token, 0, sizeof(new_token));
 		num_commands = 0;
-
 
 		for (int i = 0; i < total_tokens; i++) {
 			char temp_tok[_POSIX_ARG_MAX];
@@ -232,12 +244,16 @@ int main(void) {
 			num_commands++;
 		}
 
+		populate_struct(cmds, num_commands);
+
 		memset(tokens, 0, sizeof(tokens));
 		int counter = 0;
 		for (int i = 0; i < num_commands; i++) {
 	        tokens[counter] = new_token[i];
 	        counter++;
 	    }
+
+		free(line);
 
 		if (total_tokens != 0) {
 			if (strcmp(tokens[0], "cd") == 0) {
@@ -265,11 +281,16 @@ int main(void) {
 				pid_t pid = fork();
 				if (pid == 0) {
 					/* child */
-					int ret = execvp(tokens[0], tokens);
-					close(STDIN_FILENO);
-					if (ret == -1) {
-						break;
-					}
+					// if (piping) {
+					// 	printf("here\n");
+					// 	execute_pipeline(cmds);
+					// } else {
+						int ret = execvp(tokens[0], tokens);
+						close(STDIN_FILENO);
+						if (ret == -1) {
+							break;
+						}
+					// }
 				} else if (pid == -1) {
 					perror("fork");
 				} else {
@@ -279,6 +300,8 @@ int main(void) {
 				}
 			}
 		}
+		piping = false;
+
 	}
 
 	return 0;

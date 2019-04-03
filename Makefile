@@ -6,18 +6,19 @@ debug=1
 CFLAGS += -Wall -g -DDEBUG=$(debug) 
 LDFLAGS +=
 
-src=history.c shell.c timer.c tokenizer.c user_info.c built_in.c
+src=history.c shell.c timer.c tokenizer.c user_info.c built_in.c pipe.c
 obj=$(src:.c=.o)
 
 $(bin): $(obj)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(obj) -o $@
 
-shell.o: shell.c history.h timer.h debug.h tokenizer.h
+shell.o: shell.c history.h timer.h debug.h tokenizer.h pipe.h
 history.o: history.c history.h
 timer.o: timer.c timer.h
 tokenizer.o: tokenizer.c tokenizer.h
 user_info.o: user_info.c user_info.h
 built_in.o: built_in.c built_in.h
+pipe.o: pipe.c pipe.h
 
 clean:
 	rm -f $(bin) $(obj)

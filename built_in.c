@@ -17,24 +17,6 @@ int is_file(const char *path) {
 	return S_ISREG(path_stat.st_mode);
 }
 
-char *path_converter(char *path, char *name) {
-	memset(ret, 0, 10000);
-
-	char *new_name = name;
-	char *temp = "/";
-	char *new_dir = (char *) malloc(100 + strlen(path) + strlen(new_name));
-	char *a = (char *) malloc(100 + strlen(path) + strlen(temp));
-	strcpy(a, path);
-	strcat(a, temp);
-	strcpy(new_dir, a);
-	strcat(new_dir, new_name);
-	strcpy(ret, new_dir);
-
-	free(a);
-	free(new_dir);
-	return ret;
-}
-
 void change_directory(char *target) {
 	char cwd[PATH_MAX];
 	memset(cwd, 0, PATH_MAX);

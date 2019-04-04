@@ -17,14 +17,13 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 	int start = 0;
 	int end = 0;
 	bool contains = false;
+	char *command[_POSIX_ARG_MAX];
+	// char *command2[_POSIX_ARG_MAX];
 
 	for (int i = 0; i < num_commands; i++) {
 		char *parsed_tok = new_token[i];
-		
 		if (strcmp(parsed_tok, "|") == 0 || (i + 1 >= num_commands)) {
-			char *command[_POSIX_ARG_MAX];
 			int track = 0;
-			printf("Conuter: %d\n", counter);
 
 			if ((i + 1) >= num_commands) {
 				contains = false;
@@ -40,24 +39,22 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 			}
 
 			command[track] = (char *) NULL;
-			printf("Printing command:\n");
-			for (int k = 0; k < track; k++) {
-				char *position = command[k];
-				while (*position != '\0') {
-					printf("%c", *(position++));
-				}
-				strcpy(position, "");
-				printf("\n");
-			}
 			cmds[counter].tokens = command;
-			printf("%s      %d\n", *command, counter);
 			cmds[counter].stdout_file = NULL;
 			if (contains) {
 				cmds[counter].stdout_pipe = true;
 			} else {
-				// printf("This is cmds->tokens[1]: %s\n", cmds[counter].tokens[1]);
 				cmds[counter].stdout_pipe = false;
 			}
+
+			// printf("This is tokens: %s\n", *cmds[counter].tokens);
+			printf("Printing command now:\n");
+			for (int k = 0; k < track; k++) {
+				printf("%s\n", command[k]);
+			}
+
+			// printf("[counter]: %s\n", *cmds[counter].tokens);
+			// printf("[0]: %s\n", *cmds[0].tokens);
 
 			if ((end + 1) < num_commands) {
 				start = end + 1;
@@ -71,9 +68,9 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 		}
 	}
 
-
 	printf("Finally executing:\n");	
 	printf("%s\n", cmds[0].tokens[0]);
+	printf("%s\n", cmds[1].tokens[0]);
 	execute_pipeline(cmds);
 }
 
@@ -93,7 +90,6 @@ void execute_pipeline(struct command_line *cmds) {
 			}
 		}
 		int result = 0;
-		printf("Last Command: %s\n", cmds->tokens[0]);
 		result = execvp(cmds->tokens[0], cmds->tokens);
 
 		if(result == -1) {
@@ -116,7 +112,6 @@ void execute_pipeline(struct command_line *cmds) {
 					return;
 				} else {
 					close(fd[0]);
-					printf("Command: %s\n", cmds->tokens[0]);
 					int value = execvp(cmds->tokens[0], cmds->tokens);
 					if(value == -1) {
 						perror("execvp");

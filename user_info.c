@@ -6,6 +6,9 @@
 #include <pwd.h>
 #include <unistd.h> 
 
+/**
+ * Gets the username
+ */
 void get_user() {
 	uid_t uid = geteuid();
 	struct passwd *pw = getpwuid(uid);
@@ -14,6 +17,9 @@ void get_user() {
 	}
 }
 
+/**
+ * Gets the hostname of the system
+ */
 void get_hostname() {
 	char buff[BUFF];
 	int hostname;
@@ -26,6 +32,9 @@ void get_hostname() {
 	}
 }
 
+/**
+ * Gets the home directory of the account
+ */ 
 void get_home_dir() {
 	struct passwd *pw = getpwuid(getuid());
 	strcpy(HOME, pw->pw_dir);

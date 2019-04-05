@@ -11,6 +11,7 @@ bool token_seen;
 char tok_ret[_POSIX_ARG_MAX];
 int num_commands;
 char new_token[_POSIX_ARG_MAX][_POSIX_ARG_MAX];
+char new_token1[_POSIX_ARG_MAX][_POSIX_ARG_MAX];
 
 char *next_token(char **str_ptr, const char *delim, int total_tokens);
 char *env_check(char *tokens);

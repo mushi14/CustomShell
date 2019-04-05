@@ -27,6 +27,7 @@ char short_path[PATH_MAX];
 char current_dir[PATH_MAX];
 bool history_check = false;
 bool double_ex = false;
+bool redirection = false;
 
 void sigint_handler(int signo) {
 	printf("It worked\n");
@@ -83,14 +84,6 @@ void print_prompt() {
 }
 
 int main(void) {
-
-    /*double start = get_time();
-    print_history();
-    sleep(1);
-    double end = get_time();
-
-    printf("Time elapsed: %fs\n", end - start);*/
-
 	get_user();
 	get_hostname();
 	get_home_dir();
@@ -104,7 +97,6 @@ int main(void) {
 			getcwd(current_dir, sizeof(current_dir));
 			scripting = true;
     	}
-
 
     	if (!scripting) {
 			print_prompt();
@@ -132,6 +124,16 @@ int main(void) {
 
 		if (total >= _POSIX_ARG_MAX) {
 			break;
+		}
+
+		if (strstr(line, "|")) {
+			piping = true;
+		}
+
+		if (strstr(line, ">")) {
+			redirection = true;
+		} else {
+			redirection = false;
 		}
 
 		if (strcmp(line, "\n") != 0) {
@@ -207,19 +209,6 @@ int main(void) {
 			break;
 		}
 
-		piping = false;
-		int pipe_counter = 0;
-		struct command_line cmds[100];
-		// char *command1[] = {"ls", "-1", "/", (char *) NULL};
-
-		// command1[0] = tokens[0];
-		// command1[1] = "this is mhshahid hello world";
-		// command1[3] = (char *) NULL;
-
-		// cmds[0].tokens = command1;
-		// cmds[0].stdout_pipe = false;
-		// cmds[0].stdout_file = NULL;
-
 		memset(new_token, 0, sizeof(new_token));
 		num_commands = 0;
 
@@ -244,14 +233,31 @@ int main(void) {
 			num_commands++;
 		}
 
-		populate_struct(cmds, num_commands);
-
 		memset(tokens, 0, sizeof(tokens));
 		int counter = 0;
+		int struct_size = 0;
+		int ind = 0;
+		char *out_file;
+
 		for (int i = 0; i < num_commands; i++) {
-	        tokens[counter] = new_token[i];
-	        counter++;
-	    }
+			if (strcmp(new_token[i], ">") == 0) {
+				ind = i + 1;
+				break;
+			}
+			tokens[counter] = new_token[i];
+			if (strcmp(tokens[counter], "|") == 0) {
+				struct_size++;
+			}
+			counter++;
+		}
+
+		struct command_line cmds[struct_size + 1];
+		memcpy(new_token1, new_token, sizeof(new_token));
+
+		if (piping) {
+			populate_struct(cmds, num_commands);
+			continue;
+		}
 
 		free(line);
 
@@ -280,28 +286,42 @@ int main(void) {
 				tokens[i] = (char *) NULL;
 				pid_t pid = fork();
 				if (pid == 0) {
-					/* child */
-					// if (piping) {
-					// 	printf("here\n");
-					// 	execute_pipeline(cmds);
-					// } else {
-						int ret = execvp(tokens[0], tokens);
-						close(STDIN_FILENO);
-						if (ret == -1) {
-							break;
+					if (!piping) {
+						if (redirection) {
+							out_file = new_token[ind];
+							// printf("This is output_file: %s\n", out_file);
+							if(out_file != NULL) {
+								int open_flags = O_RDWR | O_CREAT | O_TRUNC;
+								int fd = open(out_file, open_flags, 0666);
+								if(fd == -1) {
+									perror("couldn't open file");
+								} else {
+									if(dup2(fd, STDOUT_FILENO) == -1) {
+										perror("error");
+									}
+								}
+							}
+
+							int ret = execvp(tokens[0], tokens);
+							if (ret == -1) {
+								break;
+							}
+						} else {
+							int ret = execvp(tokens[0], tokens);
+							close(STDIN_FILENO);
+							if (ret == -1) {
+								break;
+							}
 						}
-					// }
+					}
 				} else if (pid == -1) {
 					perror("fork");
 				} else {
-					/* parent */
 					int status;
 					waitpid(pid, &status, 0);
 				}
 			}
 		}
-		piping = false;
-
 	}
 
 	return 0;

@@ -7,6 +7,11 @@
 #include <stdbool.h>
 #include <ctype.h>
 
+/**
+ * Function for checking if the given token starting with an exclamation point.
+ * Param: token - token to check
+ * Return: true if the given token did start with !
+ */
 bool starts_with(char *token) {
 	bool ret = false;
 	
@@ -18,6 +23,11 @@ bool starts_with(char *token) {
 	return ret;
 }
 
+/**
+ * Function for checking whether the given string is numeric.
+ * Param: line - a line of given command to check
+ * Return: true if the given line is numeric
+ */
 bool is_numeric(char *line) {
 	size_t len = strlen(line);
 	if (len > 0 && line[len - 1] == '\n') {
@@ -47,14 +57,23 @@ bool is_numeric(char *line) {
 	return digit;
 }
 
+/**
+ * A helper function that appends a character to a string.
+ * Param: s - string to append to
+ * Param: c - character to append
+ */
 void append(char *s, char c) {
 	int len = strlen(s);
 	s[len] = c;
 	s[len+1] = '\0';
 }
 
+/**
+ * Finds the index that has the smallest command number
+ * Return: the index that has the smallest command number
+ */
 int smallest_index() {
-	char temp_history[HIST_MAX][_POSIX_ARG_MAX];
+	char temp_history[HIST_MAX][100];
 	memcpy(temp_history, history, sizeof(history));
 
 	char compare[1000];
@@ -85,6 +104,11 @@ int smallest_index() {
 	return smallest;
 }
 
+/**
+ * Adds the given line to the history array
+ * Param: line - the line to add to the history array
+ * Param: hist_tracker - command count of the line
+ */
 void add_history(char *line, int hist_tracker) {
 	int index = hist_tracker;
 
@@ -96,6 +120,10 @@ void add_history(char *line, int hist_tracker) {
 	strcat(history[index], line);
 }
 
+/**
+ * Prints the last 100 commands in history array
+ * Param: hist_tracker - current command, needed to figure out the end of the history array
+ */
 void print_history(int hist_tracker) {
 	int smallest = smallest_index();
 
@@ -126,6 +154,11 @@ void print_history(int hist_tracker) {
 	}
 }
 
+/** 
+ * Prints the last command that was entered by the user
+ * Param: index - command number to search for in history array
+ * Return: latest command that was entered
+ */
 char *double_exclamation(int index) {
 	char entry[_POSIX_ARG_MAX];
 	char *ret;
@@ -142,6 +175,14 @@ char *double_exclamation(int index) {
 	return ret;
 }
 
+/**
+ * Function that performs the prefix search on the history array and returns
+ * the latest search result that matches the prefix that is being searched.
+ * Param: prefix - word to look for in the history array
+ * Param: hist_tracker - the last command number, used for finding the length
+ *        of history array
+ * Return: latest search result that matches the word
+ */
 char *prefix_search(char *prefix, int hist_tracker) {
 	int highest = 0;
 	int index = 0;
@@ -149,7 +190,7 @@ char *prefix_search(char *prefix, int hist_tracker) {
 	char compare[1000];
 	memset(compare, 0, 1000);
 
-	char temp_history2[HIST_MAX][_POSIX_ARG_MAX];
+	char temp_history2[HIST_MAX][100];
 	memcpy(temp_history2, history, sizeof(history));
 	char entry[_POSIX_ARG_MAX];
 	char letter[2];
@@ -220,6 +261,13 @@ char *prefix_search(char *prefix, int hist_tracker) {
 	return search_result;
 }
 
+/**
+ * Function that search the history array and looks for the given command
+ * number.
+ * Param: num - number to look for in the array
+ * Param: hist_tracker - the last command number, used for finding the length
+ * Return: the command the matches the given number
+ */
 char *num_search(char *num, int hist_tracker) {
 	char command[10000];
 	memset(command, 0, 10000);
@@ -229,7 +277,7 @@ char *num_search(char *num, int hist_tracker) {
 		append(command, num[i]);
 	}
 
-	char temp_history3[HIST_MAX][_POSIX_ARG_MAX];
+	char temp_history3[HIST_MAX][100];
 	memcpy(temp_history3, history, sizeof(history));
 
 	char compare[1000];
@@ -257,7 +305,6 @@ char *num_search(char *num, int hist_tracker) {
 			break;
 		}
 	}
-
 
 	char *temp_var = temp_history3[index];
 	strcpy(matches, temp_var);

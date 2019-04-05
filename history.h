@@ -7,7 +7,7 @@
 #include <stdbool.h>
 
 char search_result[_POSIX_ARG_MAX];
-char history[HIST_MAX][_POSIX_ARG_MAX];
+char history[HIST_MAX][100];
 
 struct history_entry {
     unsigned long cmd_id;

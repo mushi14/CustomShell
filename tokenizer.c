@@ -91,6 +91,12 @@ char *next_token(char **str_ptr, const char *delim, int total_tokens) {
     return current_ptr;
 }
 
+/**
+ * Checks if the given token has any valid expansion variables. Parses any
+ * quotes needed to find it. 
+ * Param: token - token to analyze
+ * Return: token converted to the value of the expansion variable
+ */
 char *env_check(char *token) {
     token_seen = false;
     char *tok_arr[_POSIX_ARG_MAX];
@@ -103,7 +109,6 @@ char *env_check(char *token) {
 
 
     if (strstr(token, " ")) {
-        // printf("multiple words in token\n");
         if (strstr(token, "$")) {
             int counter = 0;
             char *tok = strtok(tok_copy, " \t\r\n");
@@ -151,6 +156,18 @@ char *env_check(char *token) {
     return tok_ret;
 }
 
+/**
+ * Expands environment variables (identified by $ prefix, e.g., $SHELL) in a
+ * string by resizing and inserting the value of the variable into the string.
+ * This function only does one expansion, but can be called multiple times on a
+ * string to expand more than one variable.
+ * 
+ * Parameters:
+ * - str: The string with variables to expand
+ *
+ * Returns: char pointer to the newly-expanded and allocated string. Returns
+ * NULL if there are no variables to replace or if memory cannot be allocated.
+ */
 char *expand_var(char *str) {
     size_t var_start = 0;
     var_start = strcspn(str, "$");
@@ -201,10 +218,20 @@ char *expand_var(char *str) {
     return newstr;
 }
 
+/**
+ * Adds the given token to the new_tok array which is used for storing
+ * all the tokens in order parsed, cleaned, and expanded.
+ * Param: line - line to add to new_tok
+ * Param: index - index to add the line at
+ */
 void add_token(char *line, int index) {
     strcat(new_token[index], line);
 }
 
+/**
+ * Prints the new_tok array
+ * Param: index - the total length of the new_tok array
+ */
 void print_token(int index) {
     for (int i = 0; i < index; i++) {
         char *position = new_token[i];

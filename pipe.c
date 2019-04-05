@@ -10,19 +10,26 @@
 #include <limits.h>
 #include <string.h>
 
+/**
+ * Function that parses the tokens into commands and stores it into the cmds struct.
+ * The values are read from the new_token array, an array of all tokens parsed, cleaned,
+ * and separated in order.
+ * Param: cmds - command struct to populate for the specific tokens
+ * Param: num_command - total number of tokens in the new_token array
+ */
 void populate_struct(struct command_line *cmds, int num_commands) {
-	printf("Printing populate struct\n");
-
 	int counter = 0;
 	int start = 0;
 	int end = 0;
 	bool contains = false;
-	char *command[_POSIX_ARG_MAX];
-	// char *command2[_POSIX_ARG_MAX];
+	bool output = false;
+	char *output_file;
 
 	for (int i = 0; i < num_commands; i++) {
-		char *parsed_tok = new_token[i];
-		if (strcmp(parsed_tok, "|") == 0 || (i + 1 >= num_commands)) {
+		char *parsed_tok = new_token1[i];
+
+		if (strcmp(parsed_tok, "|") == 0 || strcmp(parsed_tok, ">") == 0 || (i + 1 >= num_commands)) {
+			cmds[counter].tokens = malloc(num_commands * sizeof(char *));
 			int track = 0;
 
 			if ((i + 1) >= num_commands) {
@@ -31,36 +38,40 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 			} else if (strcmp(parsed_tok, "|") == 0) {
 				contains = true;
 				end = i;
+			} else if (strcmp(parsed_tok, ">") == 0) {
+				output = true;
+				contains = false;
+				end = i;
 			}
 
 			for (int j = start; j < end; j++) {
-				command[track] = new_token[j];
+				cmds[counter].tokens[track] = new_token1[j];
 				track++;
 			}
+			cmds[counter].tokens[track] = (char *) NULL;
 
-			command[track] = (char *) NULL;
-			cmds[counter].tokens = command;
-			cmds[counter].stdout_file = NULL;
 			if (contains) {
 				cmds[counter].stdout_pipe = true;
 			} else {
 				cmds[counter].stdout_pipe = false;
 			}
 
-			// printf("This is tokens: %s\n", *cmds[counter].tokens);
-			printf("Printing command now:\n");
-			for (int k = 0; k < track; k++) {
-				printf("%s\n", command[k]);
-			}
+			if (output) {
+				start = i + 1;
+				end = start + 1;
+				for (int j = start; j < end; j++) {
+					output_file = new_token1[j];
+				}
 
-			// printf("[counter]: %s\n", *cmds[counter].tokens);
-			// printf("[0]: %s\n", *cmds[0].tokens);
+				cmds[counter].stdout_file = output_file;
+				counter++;
+				break;
+			} else {
+				cmds[counter].stdout_file = NULL;
+			}
 
 			if ((end + 1) < num_commands) {
 				start = end + 1;
-			} else {
-				counter++;
-				break;
 			}
 
 			i = end;
@@ -68,12 +79,29 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 		}
 	}
 
-	printf("Finally executing:\n");	
-	printf("%s\n", cmds[0].tokens[0]);
-	printf("%s\n", cmds[1].tokens[0]);
-	execute_pipeline(cmds);
+	pid_t pid = fork();
+	if (pid == 0) {
+		execute_pipeline(cmds);
+	} else if(pid == -1) {
+		perror("pid error");
+		return;
+	} else {
+		int status;
+		waitpid(pid, &status, 0);
+	}
+
+	for (int i = 0; i < counter; i++) {
+		free(cmds[i].tokens);
+	}
+
+	output_file = NULL;
 }
 
+/**
+ * Recursive function that executes the given struct of commands and stores to either an output
+ * file or prints to the terminal, depending on if given an output file.
+ * Param: cmds - command struct to populate for the specific tokens
+ */
 void execute_pipeline(struct command_line *cmds) {
 	if(cmds->stdout_pipe == false) {
 		if(cmds->stdout_file != NULL) {
@@ -89,12 +117,13 @@ void execute_pipeline(struct command_line *cmds) {
 				}
 			}
 		}
+
 		int result = 0;
 		result = execvp(cmds->tokens[0], cmds->tokens);
-
 		if(result == -1) {
 			perror("execvp error");
 		}
+
 		return;
 	} 
 
@@ -126,7 +155,7 @@ void execute_pipeline(struct command_line *cmds) {
 					perror("error");
 				} else {
 					close(fd[1]);
-					execute_pipeline(cmds + 1);
+					execute_pipeline(cmds+1);
 				}
 			}
 		}

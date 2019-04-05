@@ -1,6 +1,9 @@
 #include "timer.h"
 #include <stdlib.h>
 
+/**
+ * Gets the current time
+ */
 double get_time() {
     struct timeval tv;
     gettimeofday(&tv, NULL);

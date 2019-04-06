@@ -93,8 +93,6 @@ void populate_struct(struct command_line *cmds, int num_commands) {
 	for (int i = 0; i < counter; i++) {
 		free(cmds[i].tokens);
 	}
-
-	output_file = NULL;
 }
 
 /**

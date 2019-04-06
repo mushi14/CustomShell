@@ -29,4 +29,27 @@ I broke my work up in files.
  - prefix_search function performs the prefix search on the history array and returns the latest search   
    result that matches the prefix that is being searched.  
  - num_search function searches the history array and looks for the given command number.  
+   
+3) pipe.c: This file is for handling the piping commands.  
+ - populate_strcut is a function that parses the tokens into commands and stores it into the cmds struct.  
+   The values are read from the new_token array, an array of all tokens parsed, cleaned, and separated in order.  
+ - execute_pipeline is a recursive function that executes the given struct of commands and stores to  
+   either an output.  
+     
+4) tokenizer.c: This file is for cleaning, parsing, replacing the whole line received in the commands into  
+                something that is easy to use and call.  
+ - next_token function retrieves the next token from a string. If the token contains environmental variables  
+   or quotes, this function parsing those and returns it as one token.  
+ - add_token function adds the given token to the new_tok array which is used for storing all the  
+   tokens in order parsed, cleaned, and expanded.  
+ - print_token function prints the new_token array.  
+   
+5) user_info.c: This file is for finding the current username, hostname, and home directory.  
+  
+6) shell.c: This is the main functionality of my program. It integreates all the files, and functions within  
+            those files, to perform the full functionality of my shell. The functionality consists of built in  
+            functions such as "cd", "setenv", "jobs", and "exit". My shell also copes with history, which consists  
+            of last 100 commands, which is integrated in shell.c. This file also takes care of signal handling such  
+            as SIGINT and SIGCHLD. Comments check, redirection, and piping are also implemented in shell.c along  
+            with fork.
  

@@ -142,6 +142,8 @@ char *env_check(char *token) {
                 memset(replace, 0, _POSIX_ARG_MAX);
                 strcpy(tok_ret, parsed);
             }
+
+            free(parsed);
         }
     }
 
